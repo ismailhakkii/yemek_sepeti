@@ -11,6 +11,7 @@ import 'food_detail_screen.dart';
 import 'auth/login_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
+import 'package:lottie/lottie.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,12 +22,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final List<List<Color>> _gradientColors = [
+    [Color(0xFFFFE5E5), Color(0xFFF8BBD0), Color(0xFFF06292)],
+    [Color(0xFFFFF3E0), Color(0xFFFFCCBC), Color(0xFFFF8A65)],
+    [Color(0xFFE1F5FE), Color(0xFFB3E5FC), Color(0xFF4FC3F7)],
+    [Color(0xFFE8F5E9), Color(0xFFA5D6A7), Color(0xFF66BB6A)],
+  ];
+  int _gradientIndex = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FoodProvider>(context, listen: false).loadFoods();
+    });
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 6));
+      if (!mounted) return false;
+      setState(() {
+        _gradientIndex = (_gradientIndex + 1) % _gradientColors.length;
+      });
+      return true;
     });
   }
 
@@ -127,235 +143,257 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFFE5E5), Color(0xFFF8BBD0), Color(0xFFF06292)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      body: Stack(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(seconds: 2),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _gradientColors[_gradientIndex],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 8),
-              child: Row(
-                children: [
-                  const Text(
-                    '👋 Merhaba,',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      authProvider.currentUser?.name ?? 'Ziyaretçi',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.pink),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.18,
+                child: Lottie.network(
+                  'https://assets2.lottiefiles.com/packages/lf20_kyu7xb1v.json',
+                  height: 220,
+                  fit: BoxFit.contain,
+                  repeat: true,
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Yemek ara...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                onChanged: (value) {
-                  foodProvider.setSearchQuery(value);
-                },
-              ),
-            ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0),
-            SizedBox(
-              height: 50,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: foodProvider.categories.length,
-                itemBuilder: (context, index) {
-                  final category = foodProvider.categories[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: FilterChip(
-                      label: Text(category),
-                      selected: foodProvider.selectedCategory == category,
-                      onSelected: (selected) {
-                        if (selected) {
-                          foodProvider.setCategory(category);
-                        } else {
-                          foodProvider.setCategory(null);
-                        }
-                      },
+          ),
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 8),
+                child: Row(
+                  children: [
+                    const Text(
+                      '👋 Merhaba,',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                     ),
-                  ).animate().fadeIn(duration: 600.ms).slideX(
-                        begin: index.isEven ? -0.2 : 0.2,
-                        end: 0,
-                        delay: (index * 100).ms,
-                      );
-                },
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        authProvider.currentUser?.name ?? 'Ziyaretçi',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.pink),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            if (foodProvider.isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (foodProvider.error != null)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    foodProvider.error!,
-                    style: const TextStyle(color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Yemek ara...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
                   ),
+                  onChanged: (value) {
+                    foodProvider.setSearchQuery(value);
+                  },
                 ),
-              )
-            else if (foodProvider.filteredFoods.isEmpty)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('🍔', style: TextStyle(fontSize: 64)),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Aradığınız kriterde yemek bulunamadı!',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Farklı bir kategori veya arama deneyin.',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Expanded(
+              ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0),
+              SizedBox(
+                height: 50,
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: foodProvider.filteredFoods.length,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: foodProvider.categories.length,
                   itemBuilder: (context, index) {
-                    final food = foodProvider.filteredFoods[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      elevation: 8,
-                      shadowColor: Colors.pinkAccent.withOpacity(0.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(24),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FoodDetailScreen(food: food),
-                            ),
-                          );
+                    final category = foodProvider.categories[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: FilterChip(
+                        label: Text(category),
+                        selected: foodProvider.selectedCategory == category,
+                        onSelected: (selected) {
+                          if (selected) {
+                            foodProvider.setCategory(category);
+                          } else {
+                            foodProvider.setCategory(null);
+                          }
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.network(
-                                  food.imageUrl,
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 80,
-                                      height: 80,
-                                      color: Colors.grey[300],
-                                      child: const Icon(
-                                        Icons.fastfood,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          food.name,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Text('⭐', style: TextStyle(fontSize: 16)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      food.category,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${food.price.toStringAsFixed(2)} TL',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.pink,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_shopping_cart, color: Colors.pink),
-                                onPressed: () {
-                                  cartProvider.addItem(CartItem(food: food));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('${food.name} sepete eklendi'),
-                                      duration: const Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
-                    ).animate().fadeIn(duration: 600.ms).slideY(
-                          begin: 0.2,
+                    ).animate().fadeIn(duration: 600.ms).slideX(
+                          begin: index.isEven ? -0.2 : 0.2,
                           end: 0,
                           delay: (index * 100).ms,
                         );
                   },
                 ),
               ),
-          ],
-        ),
+              if (foodProvider.isLoading)
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (foodProvider.error != null)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      foodProvider.error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                )
+              else if (foodProvider.filteredFoods.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('🍔', style: TextStyle(fontSize: 64)),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Aradığınız kriterde yemek bulunamadı!',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Farklı bir kategori veya arama deneyin.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: foodProvider.filteredFoods.length,
+                    itemBuilder: (context, index) {
+                      final food = foodProvider.filteredFoods[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        elevation: 8,
+                        shadowColor: Colors.pinkAccent.withOpacity(0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FoodDetailScreen(food: food),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    food.imageUrl,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 80,
+                                        height: 80,
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.fastfood,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            food.name,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text('⭐', style: TextStyle(fontSize: 16)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        food.category,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${food.price.toStringAsFixed(2)} TL',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.pink,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add_shopping_cart, color: Colors.pink),
+                                  onPressed: () {
+                                    cartProvider.addItem(CartItem(food: food));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('${food.name} sepete eklendi'),
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(duration: 600.ms).slideY(
+                            begin: 0.2,
+                            end: 0,
+                            delay: (index * 100).ms,
+                          );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
